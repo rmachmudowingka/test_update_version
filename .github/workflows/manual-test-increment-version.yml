@@ -1,0 +1,67 @@
+name: Manual Test - Increment Version
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: "Dry run - if true, will show what would happen but won't push"
+        type: boolean
+        default: false
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  test-increment-version:
+    name: "Test version increment action"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Show current version (before)
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Display current version
+        run: |
+          echo "### Current Version" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          cat version.properties >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          CURRENT=$(grep 'app.versionCode=' version.properties | cut -d'=' -f2)
+          echo "Current version code: **$CURRENT**" >> "$GITHUB_STEP_SUMMARY"
+          echo "Next version will be: **$((CURRENT + 1))**" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Increment version (DRY RUN)
+        if: ${{ inputs.dry-run == true }}
+        run: |
+          echo "### 🧪 DRY RUN MODE" >> "$GITHUB_STEP_SUMMARY"
+          echo "This is a test run. No changes will be pushed to main branch." >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          
+          # Simulate what would happen
+          CURRENT_VERSION=$(grep 'app.versionCode=' version.properties | cut -d'=' -f2)
+          NEW_VERSION=$((CURRENT_VERSION + 1))
+          
+          echo "**Would increment version from $CURRENT_VERSION to $NEW_VERSION**" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "To actually increment, run this workflow again with dry-run: false" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Increment version (REAL)
+        if: ${{ inputs.dry-run == false }}
+        uses: ./.github/actions/increment-version
+        id: increment
+#        with:
+#          github-token: ${{ secrets.JENKINS_APPROVAL_PAT }}
+
+      - name: Show result
+        if: ${{ inputs.dry-run == false }}
+        run: |
+          echo "### ✅ Version Incremented Successfully!" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Previous version: **${{ steps.increment.outputs.previous-version }}**" >> "$GITHUB_STEP_SUMMARY"
+          echo "- New version: **${{ steps.increment.outputs.new-version }}**" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Check the commit on main branch: [View commit](https://github.com/${{ github.repository }}/commits/main)" >> "$GITHUB_STEP_SUMMARY"
+
