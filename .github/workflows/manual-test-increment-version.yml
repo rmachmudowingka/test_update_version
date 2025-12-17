@@ -53,8 +53,8 @@ jobs:
         if: ${{ inputs.dry-run == false }}
         uses: ./.github/actions/increment-version
         id: increment
-#        with:
-#          github-token: ${{ secrets.JENKINS_APPROVAL_PAT }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Show result
         if: ${{ inputs.dry-run == false }}
