@@ -1,0 +1,40 @@
+name: Manual test - Send Failure Message
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_version:
+        description: "Test version number (e.g., 3.73.0)"
+        required: false
+        default: "3.73.0"
+      test_rc_number:
+        description: "Test RC number"
+        required: false
+        default: "1"
+
+jobs:
+  send-test-failure-message:
+    name: Send Test Failure Message
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Send Test Failure Slack Notification
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_TRANSLATIONS_WEBHOOK_URL }}
+          SLACK_COLOR: "danger"
+          MSG_MINIMAL: true
+          SLACK_ICON: https://www.ikea.com/global/assets/logos/brand/ikea.svg
+          SLACK_USERNAME: "IKEAApp Release Candidate TEST"
+          SLACK_TITLE: ":red_circle: Android ${{ inputs.test_version }}-RC${{ inputs.test_rc_number }} Release Failed (TEST)"
+          SLACK_MESSAGE: |
+
+            🧪 **This is a TEST failure notification** 🧪
+
+            The release workflow has failed. Please check the workflow run for details.
+
+            <https://github.com/ingka-group-digital/IKEAApp-android/actions/runs/${{ github.run_id }}|View workflow run>
+
+            ---
+            _This is a manual test of the failure notification system._
+
