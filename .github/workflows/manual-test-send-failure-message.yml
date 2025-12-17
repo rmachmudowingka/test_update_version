@@ -21,7 +21,7 @@ jobs:
       - name: Send Test Failure Slack Notification
         uses: rtCamp/action-slack-notify@v2
         env:
-          SLACK_WEBHOOK: ${{ secrets.SLACK_TRANSLATIONS_WEBHOOK_URL }}
+          SLACK_WEBHOOK: ${{ secrets.SLACK_CMP_IKEA_ANDROID_RELEASE_WEBHOOK_URL }}
           SLACK_COLOR: "danger"
           MSG_MINIMAL: true
           SLACK_ICON: https://www.ikea.com/global/assets/logos/brand/ikea.svg
