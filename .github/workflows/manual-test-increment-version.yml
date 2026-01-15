@@ -32,20 +32,43 @@ jobs:
           
           # Get version from main
           HIGHEST_VERSION=$(grep 'app.versionCode=' version.properties | cut -d'=' -f2)
+          echo "📍 Version from main branch: $HIGHEST_VERSION"
+          
+          # List all release branches found
+          echo "🔍 Searching for release branches..."
+          RELEASE_BRANCHES=$(git branch -r | grep 'origin/release' | tr -d ' ' || echo "")
+          
+          if [ -z "$RELEASE_BRANCHES" ]; then
+            echo "ℹ️ No release branches found"
+          else
+            echo "📋 Found release branches:"
+            echo "$RELEASE_BRANCHES"
+          fi
           
           # Check all release branches for higher version codes
-          for branch in $(git branch -r | grep 'origin/release' | tr -d ' '); do
-          # Skip branches without version.properties file
-          if ! git show "$branch:version.properties" > /dev/null 2>&1; then
-           continue
-          fi
-          
-          BRANCH_VERSION=$(git show "$branch:version.properties" 2>/dev/null | grep 'app.versionCode=' | cut -d'=' -f2)
-          if [ -n "$BRANCH_VERSION" ] && [ "$BRANCH_VERSION" -gt "$HIGHEST_VERSION" ]; then
-           HIGHEST_VERSION=$BRANCH_VERSION
-          fi
+          for branch in $RELEASE_BRANCHES; do
+            echo "---"
+            echo "🔎 Checking branch: $branch"
+            
+            # Skip branches without version.properties file
+            if ! git show "$branch:version.properties" > /dev/null 2>&1; then
+              echo "  ⚠️ No version.properties file in this branch, skipping"
+              continue
+            fi
+            
+            BRANCH_VERSION=$(git show "$branch:version.properties" 2>/dev/null | grep 'app.versionCode=' | cut -d'=' -f2)
+            echo "  📌 Version in $branch: $BRANCH_VERSION"
+            
+            if [ -n "$BRANCH_VERSION" ] && [ "$BRANCH_VERSION" -gt "$HIGHEST_VERSION" ]; then
+              echo "  ✅ Found higher version! Updating highest from $HIGHEST_VERSION to $BRANCH_VERSION"
+              HIGHEST_VERSION=$BRANCH_VERSION
+            else
+              echo "  ℹ️ Version $BRANCH_VERSION is not higher than current highest ($HIGHEST_VERSION)"
+            fi
           done
           
+          echo "---"
+          echo "🏆 HIGHEST VERSION FOUND: $HIGHEST_VERSION"
           echo "highest_version=$HIGHEST_VERSION" >> $GITHUB_OUTPUT
 
       - name: Display current version
@@ -55,8 +78,10 @@ jobs:
           cat version.properties >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
           CURRENT=$(grep 'app.versionCode=' version.properties | cut -d'=' -f2)
-          echo "Current version code: **$CURRENT**" >> "$GITHUB_STEP_SUMMARY"
-          echo "Next version will be: **$((CURRENT + 1))**" >> "$GITHUB_STEP_SUMMARY"
+          HIGHEST=${{ steps.get-version.outputs.highest_version }}
+          echo "Current version code (main): **$CURRENT**" >> "$GITHUB_STEP_SUMMARY"
+          echo "Highest version code (all branches): **$HIGHEST**" >> "$GITHUB_STEP_SUMMARY"
+          echo "Next version will be: **$((HIGHEST + 1))**" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Increment version (DRY RUN)
         if: ${{ inputs.dry-run == true }}
